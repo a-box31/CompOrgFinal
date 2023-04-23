@@ -55,6 +55,7 @@ void print_binary(BIT* A);
 void convert_to_binary(int a, BIT* A, int length);
 void convert_to_binary_char(int a, char* A, int length);
 int binary_to_integer(BIT* A);
+void reg_conv(int* num, char* reg);
 
 int get_instructions(BIT Instructions[][32]);
 
@@ -88,6 +89,10 @@ BIT or_gate(BIT A, BIT B)
 BIT or_gate3(BIT A, BIT B, BIT C)
 {
   return or_gate(A, or_gate(B, C));
+}
+
+BIT or_gate4(BIT A, BIT B, BIT C, BIT D){
+  return or_gate(or_gate(A, B), or_gate(C, D));
 }
 
 BIT and_gate(BIT A, BIT B)
@@ -191,6 +196,22 @@ void convert_to_binary_char(int a, char* A, int length)
   // same approach that I use. It also might not be needed if you directly
   // convert the instructions to the proper BIT format.
 }
+
+void convert_to_binary(int a, BIT* A, int length)
+{
+  if (a >= 0) {
+    for (int i = 0; i < length; ++i) {
+      A[i] = (a % 2 == 1);
+      a /= 2;
+    }
+  } else {
+    a += 1;
+    for (int i = 0; i < length; ++i) {
+      A[i] = (a % 2 == 0);
+      a /= 2;
+    }
+  }
+}
   
 int binary_to_integer(BIT* A)
 {
@@ -205,6 +226,27 @@ int binary_to_integer(BIT* A)
   return (int)a;
 }
 
+// Convert registers to their index
+void reg_conv(int* num, char* reg){
+  if(reg[0] == 'z'){
+    num[0] = 0;
+  }else if(reg[0] == 'v'){
+    num[0] = 2;
+  }else if(reg[0] == 'a'){
+    num[0] = 4;
+  }else if(reg[0] == 't'){
+    num[0] = 8+(reg[1]-'0');
+  }else if(reg[0] == 's'){
+    if(reg[0] == 'p'){
+      num[0] = 29;
+    }else{
+      num[0] = 16+(reg[1]-'0');
+    }
+  }else{
+    num[0] = 31;
+  }
+
+}
 
 /******************************************************************************/
 /* Parsing functions */
@@ -229,9 +271,144 @@ int get_instructions(BIT Instructions[][32])
     // - Convert immediate field and jump address field to binary
     // - Use registers to get rt, rd, rs fields
     // Note: I parse everything as strings, then convert to BIT array at end
-  
+    
+    BIT conversion[32] = {FALSE}; // Holds converted string
+    char opcode[5]; // Holds instruction in string
+    char type; // Holds type of instruction
+    sscanf(line, "%s" , opcode);
+
+    // Disgusting if-else condition to find instruction type
+    if(or_gate4(strcmp(opcode, "lw") == 0, strcmp(opcode, "sw") == 0,
+      strcmp(opcode, "beq") == 0, strcmp(opcode, "addi") == 0)){
+        type = 'i';
+    }else if(or_gate3(or_gate(strcmp(opcode, "and") == 0, strcmp(opcode, "or") == 0),
+    or_gate(strcmp(opcode, "add") == 0, strcmp(opcode, "sub") == 0), 
+    or_gate(strcmp(opcode, "slt") == 0, strcmp(opcode, "jr") == 0))){
+        type = 'r';
+    }else if(or_gate3(strcmp(opcode, "j") == 0, strcmp(opcode, "jal"),
+      strcmp(opcode, "jr"))){
+        type = 'j';
+    }else{
+      perror("ERROR: Invalid/Unsupported Instruction Type");
+      exit(1);
+    }
+    
+    if(type == 'i'){
+      
+      char reg1[5]; // Rs field
+      char reg2[5]; // Rt field
+      int constant = 0; // Immediate
+      sscanf(line, "%s %s %s %d", opcode, reg1, reg2, &constant);
+
+      // Opcode conversion
+      if(strcmp(opcode, "lw") == 0){
+        conversion[26] = conversion[27] = conversion[31] = TRUE;
+      }else if(strcmp(opcode, "sw") == 0){
+        conversion[26] = conversion[27] = conversion[29] = conversion[31] = TRUE;
+      }else if(strcmp(opcode, "beq") == 0){
+        conversion[28] = TRUE;
+      }else{ // None of the other "i" type instructions, so assume "addi"
+        conversion[29] = TRUE;
+      }
+
+      // Registers rs, rt conversion
+      BIT reg1_bin[5] = {FALSE};
+      BIT reg2_bin[5] = {FALSE};
+      int reg_int1 = 0;
+      int reg_int2 = 0;
+      reg_conv(&reg_int1, reg1);
+      reg_conv(&reg_int2, reg2);
+      convert_to_binary(reg_int2, reg2_bin, 5);
+      for(int i = 25; i >= 21; i--){
+        conversion[i] = reg2_bin[i-21];
+      }
+      convert_to_binary(reg_int1, reg1_bin, 5);
+      for(int i = 20; i >= 16; i--){
+        conversion[i] = reg1_bin[i-16];
+      }
+      // Offset/Constant conversion
+      BIT immediate[16] = {FALSE};
+      convert_to_binary(constant, immediate, 16);
+      for(int i = 15; i >= 0; i--){
+        conversion[i] = immediate[i];
+      }
+
+    }else if(type == 'r'){
+
+      char reg1[5]; // Rs field
+      char reg2[5]; // Rt field
+      char reg3[5]; // Rd field
+      sscanf(line, "%s %s %s %s", opcode, reg1, reg2, reg3);
+
+      // Registers rs, rt, rd data
+      BIT reg1_bin[5] = {FALSE};
+      BIT reg2_bin[5] = {FALSE};
+      BIT reg3_bin[5] = {FALSE};
+      int reg_int1 = 0;
+      int reg_int2 = 0;
+      int reg_int3 = 0;
+      reg_conv(&reg_int1, reg1);
+      reg_conv(&reg_int2, reg2);
+      reg_conv(&reg_int3, reg3);
+
+      // Register shamt/rs conversion
+      convert_to_binary(reg_int3, reg3_bin, 5);
+      if(strcmp(opcode, "slt") == 0){
+        for(int i = 11; i >= 6; i--){
+          conversion[i] = reg3_bin[i-6];
+        }
+      }else{
+        for(int i = 25; i >= 21; i--){
+          conversion[i] = reg3_bin[i-21];
+        }
+      }
+
+      // Registers rt, rd conversions
+      if(strcmp(opcode, "jr") != 0){
+        convert_to_binary(reg_int2, reg2_bin, 5);
+        for(int i = 20; i >= 16; i--){
+          conversion[i] = reg2_bin[i-16];
+        }
+        convert_to_binary(reg_int1, reg1_bin, 5);
+        for(int i = 15; i >= 11; i--){
+          conversion[i] = reg1_bin[i-11];
+        }
+      }
+
+      // Funct conversion
+      if(strcmp(opcode, "and") == 0){
+        conversion[2] = conversion[5] = TRUE;
+      }else if(strcmp(opcode, "or") == 0){
+        conversion[0] = conversion[2] = conversion[5] = TRUE;
+      }else if(strcmp(opcode, "add") == 0){
+        conversion[5] = TRUE;
+      }else if(strcmp(opcode, "sub") == 0){
+        conversion[1] = conversion[5] = TRUE;
+      }else if(strcmp(opcode, "slt") == 0){
+        conversion[1] = conversion[3] = conversion[5] = TRUE;
+      }else{ // None of the other "r" type instructions, so assume "jr"
+        conversion[2] = TRUE;
+      }
+
+    }else{ // We already checked for invalid instruction, so assume "j" type
+
+      // Opcode conversion
+      conversion[27] = TRUE;
+      if(strcmp(opcode, "jal") == 0){
+        conversion[26] = TRUE;
+      }
+
+      // Address conversion
+      int a; // Holds value of address
+      sscanf(line, "%d" , &a);
+      convert_to_binary(a, conversion, 32);
+
+    }
+    print_binary(conversion);
+    printf("\n");
+    // Instructions[instruction_count] = conversion;
+    ++instruction_count;
   }
-  
   return instruction_count;
 }
 
@@ -386,16 +563,17 @@ int main()
     
   // parse instructions into binary format
   int counter = get_instructions(MEM_Instruction);
+
   
   // load program and run
-  copy_bits(ZERO, PC);
-  copy_bits(THIRTY_TWO, MEM_Register[29]);
+  // copy_bits(ZERO, PC);
+  // copy_bits(THIRTY_TWO, MEM_Register[29]);
   
-  while (binary_to_integer(PC) < counter) {
-    print_instruction();
-    updateState();
-    print_state();
-  }
+  // while (binary_to_integer(PC) < counter) {
+  //   print_instruction();
+  //   updateState();
+  //   print_state();
+  // }
 
   return 0;
 }
