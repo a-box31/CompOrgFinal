@@ -529,9 +529,17 @@ void Control(BIT* OpCode,
 {
   // TODO: Set control bits for everything
   // Input: opcode field from the instruction
-  // OUtput: all control lines get set 
+  // Output: all control lines get set 
   // Note: Can use SOP or similar approaches to determine bits
-  
+
+  BIT isLW = and_gate( and_gate3( OpCode[0], not_gate(OpCode[1]), not_gate(OpCode[2]) ), 
+                              and_gate3( not_gate(OpCode[3]) , OpCode[4], OpCode[5] ) );
+  BIT isArith = and_gate( not_gate(OpCode[0]), not_gate(OpCode[1]) );
+
+
+  // SET BITS
+  RegDst = not_gate(isLW);
+
 }
 
 void Read_Register(BIT* ReadRegister1, BIT* ReadRegister2,
@@ -603,6 +611,8 @@ void updateState()
   // Write Back - write to the register file
   // Update PC - determine the final PC value for the next instruction
   
+  
+  
 }
 
 
@@ -620,10 +630,10 @@ int main()
   
   // load program and run
   copy_bits(ZERO, PC);
-  // copy_bits(THIRTY_TWO, MEM_Register[29]);
+  copy_bits(THIRTY_TWO, MEM_Register[29]);
   
   // while (binary_to_integer(PC) < counter) {
-    print_instruction();
+  //   print_instruction();
   //   updateState();
   //   print_state();
   // }
