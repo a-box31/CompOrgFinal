@@ -455,8 +455,8 @@ int get_instructions(BIT Instructions[][32])
         conversion[i] = address[i];
       }
     }
-    print_binary(conversion);
-    printf("\n");
+    // print_binary(conversion);
+    // printf("\n");
     for(int i = 0; i < 32; i++){
       Instructions[instruction_count][i] = conversion[i];
     }
@@ -520,7 +520,9 @@ void Instruction_Memory(BIT* ReadAddress, BIT* Instruction)
   // Input: 32-bit instruction address
   // Output: 32-bit binary instruction
   // Note: Useful to use a 5-to-32 decoder here
-  
+  for(int i = 31; i >= 0; i--){
+    Instruction[i] = ReadAddress[i];
+  }
 }
 
 void Control(BIT* OpCode,
@@ -551,6 +553,7 @@ void Write_Register(BIT RegWrite, BIT* WriteRegister, BIT* WriteData)
   // Output: None, but will modify register file
   // Note: Implementation will again be similar to those above
   
+  
 }
 
 void ALU_Control(BIT* ALUOp, BIT* funct, BIT* ALUControl)
@@ -579,7 +582,11 @@ void Data_Memory(BIT MemWrite, BIT MemRead,
   // Input: 32-bit address, control flags for read/write, and data to write
   // Output: data read if processing a lw instruction
   // Note: Implementation similar as above
-  
+  // if(){
+
+  // }
+  // Write_Register();
+  // Read_Register();
 }
 
 void Extend_Sign16(BIT* Input, BIT* Output)
@@ -602,7 +609,14 @@ void updateState()
   // Memory - read/write data memory
   // Write Back - write to the register file
   // Update PC - determine the final PC value for the next instruction
-  
+
+  // Fetch
+  BIT ReadAddress[32] = {FALSE};
+  int count = 0;
+  while(PC[count] == TRUE){
+    Instruction_Memory(ReadAddress, MEM_Instruction[count]);
+    count++;
+  }
 }
 
 
@@ -620,13 +634,16 @@ int main()
   
   // load program and run
   copy_bits(ZERO, PC);
-  // copy_bits(THIRTY_TWO, MEM_Register[29]);
+  copy_bits(THIRTY_TWO, MEM_Register[29]);
   
-  // while (binary_to_integer(PC) < counter) {
+  while (binary_to_integer(PC) < counter) {
     print_instruction();
-  //   updateState();
-  //   print_state();
-  // }
+    updateState();
+    print_state();
+    int pc = binary_to_integer(PC);
+    ++pc;
+    convert_to_binary(pc, PC, 32);
+  }
 
   return 0;
 }
