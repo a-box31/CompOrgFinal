@@ -46,6 +46,9 @@ BIT nor_gate(BIT A, BIT B);
 BIT nand_gate(BIT A, BIT B);
 
 void decoder2(BIT I0, BIT I1, BIT* O0, BIT* O1, BIT* O2, BIT* O3);
+void decoder3(BIT* I, BIT EN, BIT* O);
+// void decoder5(BIT* I, BIT EN, BIT* O);
+
 BIT multiplexor2(BIT S, BIT I0, BIT I1);
 void multiplexor2_32(BIT S, BIT* I0, BIT* I1, BIT* Output);
 BIT multiplexor4(BIT S0, BIT S1, BIT I0, BIT I1, BIT I2, BIT I3);
@@ -136,6 +139,52 @@ void decoder2(BIT I0, BIT I1, BIT* O0, BIT* O1, BIT* O2, BIT* O3)
   
   return;
 }
+
+void decoder3(BIT* I, BIT EN, BIT* O)
+{
+  // TODO: implement 3-to-8 decoder
+    O[0] = and_gate(and_gate3(not_gate(I[0]), not_gate(I[1]), not_gate(I[2])), EN);
+    O[1] = and_gate(and_gate3(I[0], not_gate(I[1]), not_gate(I[2])), EN);
+    O[2] = and_gate(and_gate3(not_gate(I[0]), I[1], not_gate(I[2])), EN);
+    O[3] = and_gate(and_gate3(I[0], I[1], not_gate(I[2])), EN);
+    O[4] = and_gate(and_gate3(not_gate(I[0]), not_gate(I[1]), I[2]), EN);
+    O[5] = and_gate(and_gate3(I[0], not_gate(I[1]), I[2]), EN);
+    O[6] = and_gate(and_gate3(not_gate(I[0]), I[1], I[2]), EN);
+    O[7] = and_gate(and_gate3(I[0], I[1], I[2]), EN);
+  return;
+}
+
+// void decoder5(BIT* I, BIT EN, BIT* O)
+// {
+//   BIT I_2[2] = {I[3], I[4]};
+//   BIT I_3[3] = {I[0], I[1], I[2]};
+
+//   BIT O_2[4] = {FALSE};
+//   decoder2(I_2, EN, O_2);
+
+//   BIT O_3_1[8] = {FALSE};
+//   BIT O_3_2[8] = {FALSE};
+//   BIT O_3_3[8] = {FALSE};
+//   BIT O_3_4[8] = {FALSE};
+//   decoder3(I_3, O_2[0], O_3_1);
+//   decoder3(I_3, O_2[1], O_3_2);
+//   decoder3(I_3, O_2[2], O_3_3);
+//   decoder3(I_3, O_2[3], O_3_4);
+
+//   for(int i = 0; i < 32; i++){
+//     if(i <= 7){
+//       O[i] = O_3_1[i];
+//     }else if(i <= 15){
+//       O[i] = O_3_2[i-8];
+//     }else if(i <= 23){
+//       O[i] = O_3_3[i-16];
+//     }else if(i <= 31){
+//       O[i] = O_3_4[i-24];
+//     }
+//   }
+
+//   return;
+// }
 
 BIT multiplexor2(BIT S, BIT I0, BIT I1)
 {
@@ -352,26 +401,26 @@ int get_instructions(BIT Instructions[][32])
       reg_conv(&reg_int3, reg3);
 
       // Register shamt/rs conversion
-      convert_to_binary(reg_int3, reg3_bin, 5);
+      convert_to_binary(reg_int2, reg2_bin, 5);
       if(strcmp(opcode, "slt") == 0){
-        for(int i = 11; i >= 6; i--){
-          conversion[i] = reg3_bin[i-6];
+        for(int i = 10; i >= 6; i--){
+          conversion[i] = reg2_bin[i-6];
         }
       }else{
         for(int i = 25; i >= 21; i--){
-          conversion[i] = reg3_bin[i-21];
+          conversion[i] = reg2_bin[i-21];
         }
       }
 
       // Registers rt, rd conversions
       if(strcmp(opcode, "jr") != 0){
-        convert_to_binary(reg_int2, reg2_bin, 5);
-        for(int i = 20; i >= 16; i--){
-          conversion[i] = reg2_bin[i-16];
-        }
         convert_to_binary(reg_int1, reg1_bin, 5);
+        for(int i = 20; i >= 16; i--){
+          conversion[i] = reg1_bin[i-16];
+        }
+        convert_to_binary(reg_int3, reg3_bin, 5);
         for(int i = 15; i >= 11; i--){
-          conversion[i] = reg1_bin[i-11];
+          conversion[i] = reg3_bin[i-11];
         }
       }
 
@@ -398,15 +447,19 @@ int get_instructions(BIT Instructions[][32])
         conversion[26] = TRUE;
       }
 
-      // Address conversion
       int a; // Holds value of address
-      sscanf(line, "%d" , &a);
-      convert_to_binary(a, conversion, 32);
-
+      BIT address[26] = {FALSE};
+      sscanf(line, "%s %d", opcode, &a);
+      convert_to_binary(a, address, 26);
+      for(int i = 25; i >= 0; i--){
+        conversion[i] = address[i];
+      }
     }
     print_binary(conversion);
     printf("\n");
-    // Instructions[instruction_count] = conversion;
+    for(int i = 0; i < 32; i++){
+      Instructions[instruction_count][i] = conversion[i];
+    }
     ++instruction_count;
   }
   return instruction_count;
@@ -566,11 +619,11 @@ int main()
 
   
   // load program and run
-  // copy_bits(ZERO, PC);
+  copy_bits(ZERO, PC);
   // copy_bits(THIRTY_TWO, MEM_Register[29]);
   
   // while (binary_to_integer(PC) < counter) {
-  //   print_instruction();
+    print_instruction();
   //   updateState();
   //   print_state();
   // }
