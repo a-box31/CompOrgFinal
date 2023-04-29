@@ -45,13 +45,12 @@ BIT xor_gate(BIT A, BIT B);
 BIT nor_gate(BIT A, BIT B);
 BIT nand_gate(BIT A, BIT B);
 
-void decoder2(BIT I0, BIT I1, BIT* O0, BIT* O1, BIT* O2, BIT* O3);
+void decoder2(BIT* I, BIT EN, BIT* O);
 void decoder3(BIT* I, BIT EN, BIT* O);
 void decoder5(BIT* I, BIT EN, BIT* O);
 
 BIT multiplexor2(BIT S, BIT I0, BIT I1);
 void multiplexor2_32(BIT S, BIT* I0, BIT* I1, BIT* Output);
-BIT multiplexor32_1(BIT* I, BIT* C)
 BIT multiplexor4(BIT S0, BIT S1, BIT I0, BIT I1, BIT I2, BIT I3);
 
 void copy_bits(BIT* A, BIT* B);
@@ -128,15 +127,18 @@ BIT nand_gate(BIT A, BIT B)
   return not_gate(and_gate(A, B));
 }
 
-void decoder2(BIT I0, BIT I1, BIT* O0, BIT* O1, BIT* O2, BIT* O3)
+void decoder2(BIT* I, BIT EN, BIT* O)
 {
-  // Note: The input -> output mapping is modified from before
-  BIT nI1 = not_gate(I1);
-  BIT nI0 = not_gate(I0);
-  *O0 = and_gate(nI1, nI0);
-  *O1 = and_gate(nI1, I0);
-  *O2 = and_gate(I1, nI0);
-  *O3 = and_gate(I1,  I0);
+  BIT nI1 = not_gate(I[1]);
+  BIT nI0 = not_gate(I[0]);
+  O[0] = and_gate(nI1, nI0);
+  O[1] = and_gate(nI1, I[0]);
+  O[2] = and_gate(I[1], nI0);
+  O[3] = and_gate(I[1],  I[0]);
+  
+  // Note use of EN (enable) line below
+  for (int i = 0; i < 4; ++i)
+    O[i] = and_gate(EN, O[i]);
   
   return;
 }
@@ -192,8 +194,9 @@ void multiplexor2_32(BIT S, BIT* I0, BIT* I1, BIT* Output)
 
 BIT multiplexor4(BIT S0, BIT S1, BIT I0, BIT I1, BIT I2, BIT I3)
 {
-  BIT x0, x1, x2, x3 = FALSE;
-  decoder2(S0, S1, &x0, &x1, &x2, &x3);
+  BIT X[4] = {FALSE};
+  decoder2(&S0, S1, X);
+  BIT x0=X[0], x1=X[1], x2=X[2], x3=X[3];
   
   BIT y0 = and_gate(x0, I0);
   BIT y1 = and_gate(x1, I1);
@@ -441,8 +444,8 @@ int get_instructions(BIT Instructions[][32])
         conversion[i] = address[i];
       }
     }
-    // print_binary(conversion);
-    // printf("\n");
+    print_binary(conversion);
+    printf("\n");
     for(int i = 0; i < 32; i++){
       Instructions[instruction_count][i] = conversion[i];
     }
@@ -531,13 +534,18 @@ void Control(BIT* OpCode,
   // Output: all control lines get set 
   // Note: Can use SOP or similar approaches to determine bits
 
-  BIT isLW = and_gate( and_gate3( OpCode[0], not_gate(OpCode[1]), not_gate(OpCode[2]) ), 
-                              and_gate3( not_gate(OpCode[3]) , OpCode[4], OpCode[5] ) );
-  BIT isArith = and_gate( not_gate(OpCode[0]), not_gate(OpCode[1]) );
-
+  BIT isRType = and_gate( and_gate3( not_gate(OpCode[0]), not_gate(OpCode[1]), not_gate(OpCode[2]) ), 
+                          and_gate3( not_gate(OpCode[3]), not_gate(OpCode[4]), not_gate(OpCode[5]) )  );
+  BIT isLW = and_gate( and_gate3( OpCode[5],            not_gate(OpCode[4]), not_gate(OpCode[3]) ), 
+                       and_gate3( not_gate(OpCode[2]) , OpCode[1],           OpCode[0]           ) );
+  BIT isSW = and_gate( and_gate3( OpCode[0], OpCode[1], not_gate(OpCode[2]) ), 
+                       and_gate3( OpCode[3], not_gate(OpCode[4]), OpCode[5] ) );
+  BIT isBEQ = and_gate( not_gate(OpCode[0]), not_gate(OpCode[1]), OpCode[2], 
+                        not_gate(OpCode[3]), not_gate(OpCode[4]), not_gate(OpCode[5]) );
 
   // SET BITS
-  RegDst = not_gate(isLW);
+  RegDst = isRType;
+  // ALUSrc = 
 
 }
 
@@ -571,7 +579,7 @@ void ALU_Control(BIT* ALUOp, BIT* funct, BIT* ALUControl)
 
   ALUControl[3] = FALSE;
   ALUControl[2] = or_gate( ALUOp[0], funct[1] );
-  ALUControl[1] = or_gate( not_gate( funct[2], or_gate( and_gate( not_gate(ALUOp[1]), not_gate(ALUOp[0]) ) , ALUOp[0] ) ) );
+  ALUControl[1] = or_gate( not_gate( funct[2] ) , or_gate( and_gate( not_gate(ALUOp[1]), not_gate(ALUOp[0]) ) , ALUOp[0] ) ) ;
   ALUControl[0] = and_gate( ALUOp[1], or_gate( and_gate(funct[3], funct[1]) , and_gate(funct[2], funct[0]) ) );
 
 
@@ -666,22 +674,22 @@ int main()
   copy_bits(ZERO, PC);
   copy_bits(THIRTY_TWO, MEM_Register[29]);
   
-  while (binary_to_integer(PC) < counter) {
-    print_instruction();
-    updateState();
-    print_state();
-  }
+  // while (binary_to_integer(PC) < counter) {
+  //   print_instruction();
+  //   updateState();
+  //   print_state();
+  // }
 
 
 
-  while (binary_to_integer(PC) < counter) {
-    print_instruction();
-    updateState();
-    print_state();
-    int pc = binary_to_integer(PC);
-    ++pc;
-    convert_to_binary(pc, PC, 32);
-  }
+  // while (binary_to_integer(PC) < counter) {
+  //   print_instruction();
+  //   updateState();
+  //   print_state();
+  //   int pc = binary_to_integer(PC);
+  //   ++pc;
+  //   convert_to_binary(pc, PC, 32);
+  // }
 
   return 0;
 }
