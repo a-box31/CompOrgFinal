@@ -530,7 +530,7 @@ void Instruction_Memory(BIT* ReadAddress, BIT* Instruction)
   // 5-to-32 bit decoder is used to select which mem instruction to use
   // creates a 32 bits of false with one true being the instruction bits
   BIT Selection[32] = {FALSE};
-  decoder5( ReadAddress, TRUE , Selection );
+  decoder5(ReadAddress, TRUE, Selection);
 
   // use the selection bits to find index
   unsigned int index = 0;
@@ -538,7 +538,7 @@ void Instruction_Memory(BIT* ReadAddress, BIT* Instruction)
     index += Selection[i]*i;
   }
   // get the memory instruction
-  copy_bits( MEM_Instruction[index] , Instruction );
+  copy_bits(MEM_Instruction[index], Instruction);
 }
 
 void Control(BIT* OpCode,
@@ -716,55 +716,36 @@ void updateState()
   // Write Back - write to the register file
   // Update PC - determine the final PC value for the next instruction
 
+  // Fetch
   BIT ReadAddress[5] = { PC[0], PC[1], PC[2], PC[3], PC[4] };
   BIT Instruction[32] = {FALSE};
   Instruction_Memory( ReadAddress, Instruction );
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  // // Fetch
-  // // BIT ReadAddress[32] = {FALSE};
-  // // int count = 0;
-  // // while(PC[count] == TRUE){
-  // //   Instruction_Memory(ReadAddress, MEM_Instruction[count]);
-  // //   count++;
-  // // }
-  // BIT Address[32] = {FALSE};
-  // int count = binary_to_integer(PC);
-  // if(count >= 0){
-  //   Instruction_Memory(Address, MEM_Instruction[count]);
+  // Decode
+  BIT ReadRegister1[5] = {FALSE};
+  for(int i = 25; i >= 21; i--){
+    ReadRegister1[i-21] = ReadAddress[i];
+  }
+  BIT ReadRegister2[5] = {FALSE};
+  for(int i = 20; i >= 16; i--){
+    ReadRegister2[i-16] = ReadAddress[i];
+  }
+  BIT ReadInstruction[5] = {FALSE};
+  for(int i = 15; i >= 11; i--){
+    ReadRegister2[i-11] = ReadAddress[i];
+  }
+  BIT WriteData = multiplexor2(RegDst,ReadRegister2,ReadInstruction);
+  BIT ReadData1[32] = {FALSE};
+  BIT ReadData2[32] = {FALSE};
+  Read_Register(ReadRegister1, ReadRegister2, ReadData1, ReadData2);
+  // if(){ // Not R-type
+  //   Data_Memory(MemWrite,MemRead,Address,Read_data2,);
   // }
-  // // Decode
-  // BIT ReadRegister1[5] = {FALSE};
-  // for(int i = 25; i >= 21; i--){
-  //   ReadRegister1[i-21] = Address[i];
-  // }
-  // BIT ReadRegister2[5] = {FALSE};
-  // for(int i = 20; i >= 16; i--){
-  //   ReadRegister2[i-16] = Address[i];
-  // }
-  // // if(){ // Not R-type
-  // //   Data_Memory(MemWrite,MemRead,Address,Read_data2,);
-  // // }
-  // // Execute (ALU)
 
-  // // Memory - Read/Write data memory
-  // BIT ReadData1[32] = {FALSE};
-  // BIT ReadData2[32] = {FALSE};
-  // Read_Register(ReadRegister1, ReadRegister2, ReadData1, ReadData2);
+  // Execute (ALU)
+  // BIT readmultiplexor2
+
+  // Memory - Read/Write data memory
   // Write_Register(RegWrite,,ReadData2);
   // Data_Memory(MemWrite,MemRead,Address,,);
   
@@ -788,23 +769,16 @@ int main()
   // load program and run
   copy_bits(ZERO, PC);
   copy_bits(THIRTY_TWO, MEM_Register[29]);
-  
-  // while (binary_to_integer(PC) < counter) {
-  //   print_instruction();
-  //   updateState();
-  //   print_state();
-  // }
 
 
-
-  // while (binary_to_integer(PC) < counter) {
-  //   print_instruction();
-  //   updateState();
-  //   print_state();
-  //   int pc = binary_to_integer(PC);
-  //   ++pc;
-  //   convert_to_binary(pc, PC, 32);
-  // }
+  while (binary_to_integer(PC) < counter) {
+    print_instruction();
+    updateState();
+    print_state();
+    int pc = binary_to_integer(PC);
+    ++pc;
+    convert_to_binary(pc, PC, 32);
+  }
 
   return 0;
 }
