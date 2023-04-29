@@ -47,10 +47,11 @@ BIT nand_gate(BIT A, BIT B);
 
 void decoder2(BIT I0, BIT I1, BIT* O0, BIT* O1, BIT* O2, BIT* O3);
 void decoder3(BIT* I, BIT EN, BIT* O);
-// void decoder5(BIT* I, BIT EN, BIT* O);
+void decoder5(BIT* I, BIT EN, BIT* O);
 
 BIT multiplexor2(BIT S, BIT I0, BIT I1);
 void multiplexor2_32(BIT S, BIT* I0, BIT* I1, BIT* Output);
+BIT multiplexor32_1(BIT* I, BIT* C)
 BIT multiplexor4(BIT S0, BIT S1, BIT I0, BIT I1, BIT I2, BIT I3);
 
 void copy_bits(BIT* A, BIT* B);
@@ -143,48 +144,33 @@ void decoder2(BIT I0, BIT I1, BIT* O0, BIT* O1, BIT* O2, BIT* O3)
 void decoder3(BIT* I, BIT EN, BIT* O)
 {
   // TODO: implement 3-to-8 decoder
-    O[0] = and_gate(and_gate3(not_gate(I[0]), not_gate(I[1]), not_gate(I[2])), EN);
-    O[1] = and_gate(and_gate3(I[0], not_gate(I[1]), not_gate(I[2])), EN);
-    O[2] = and_gate(and_gate3(not_gate(I[0]), I[1], not_gate(I[2])), EN);
-    O[3] = and_gate(and_gate3(I[0], I[1], not_gate(I[2])), EN);
-    O[4] = and_gate(and_gate3(not_gate(I[0]), not_gate(I[1]), I[2]), EN);
-    O[5] = and_gate(and_gate3(I[0], not_gate(I[1]), I[2]), EN);
-    O[6] = and_gate(and_gate3(not_gate(I[0]), I[1], I[2]), EN);
-    O[7] = and_gate(and_gate3(I[0], I[1], I[2]), EN);
+  O[0] = and_gate3(not_gate(I[2]), not_gate(I[1]), not_gate(I[0]));
+  O[1] = and_gate3(not_gate(I[2]), not_gate(I[1]), I[0]);
+  O[2] = and_gate3(not_gate(I[2]), I[1], not_gate(I[0]));
+  O[3] = and_gate3(not_gate(I[2]), I[1], I[0]);
+  O[4] = and_gate3(I[2], not_gate(I[1]), not_gate(I[0]));
+  O[5] = and_gate3(I[2], not_gate(I[1]), I[0]);
+  O[6] = and_gate3(I[2], I[1], not_gate(I[0]));
+  O[7] = and_gate3(I[2], I[1], I[0]);
+  
+  for (int i = 0; i < 8; ++i)
+    O[i] = and_gate(EN, O[i]);
+  
   return;
 }
 
-// void decoder5(BIT* I, BIT EN, BIT* O)
-// {
-//   BIT I_2[2] = {I[3], I[4]};
-//   BIT I_3[3] = {I[0], I[1], I[2]};
-
-//   BIT O_2[4] = {FALSE};
-//   decoder2(I_2, EN, O_2);
-
-//   BIT O_3_1[8] = {FALSE};
-//   BIT O_3_2[8] = {FALSE};
-//   BIT O_3_3[8] = {FALSE};
-//   BIT O_3_4[8] = {FALSE};
-//   decoder3(I_3, O_2[0], O_3_1);
-//   decoder3(I_3, O_2[1], O_3_2);
-//   decoder3(I_3, O_2[2], O_3_3);
-//   decoder3(I_3, O_2[3], O_3_4);
-
-//   for(int i = 0; i < 32; i++){
-//     if(i <= 7){
-//       O[i] = O_3_1[i];
-//     }else if(i <= 15){
-//       O[i] = O_3_2[i-8];
-//     }else if(i <= 23){
-//       O[i] = O_3_3[i-16];
-//     }else if(i <= 31){
-//       O[i] = O_3_4[i-24];
-//     }
-//   }
-
-//   return;
-// }
+void decoder5(BIT* I, BIT EN, BIT* O)
+{
+   BIT EN_O[4] = {FALSE};
+   decoder2(&I[3], EN, EN_O);
+   decoder3(I, EN_O[3], &O[24]);
+   decoder3(I, EN_O[2], &O[16]);
+   decoder3(I, EN_O[1], &O[8]);
+   decoder3(I, EN_O[0], &O[0]);
+   
+  for (int i = 0; i < 32; ++i)
+    O[i] = and_gate(EN, O[i]);
+}
 
 BIT multiplexor2(BIT S, BIT I0, BIT I1)
 {
@@ -521,6 +507,17 @@ void Instruction_Memory(BIT* ReadAddress, BIT* Instruction)
   // Output: 32-bit binary instruction
   // Note: Useful to use a 5-to-32 decoder here
 
+  // only first 5 bits matter in PC matter bc instruction mem is 32 bits
+  // 5-to-32 bit decoder is used to select which mem instruction to use
+  // creates a 32 bits of false with one true being the instruction bits
+  BIT Selection[32] = {FALSE};
+  decoder5( ReadAddress, TRUE , Selection );
+
+  unsigned int index = 0;
+  for( int i = 0; i < 32; i++ ){
+    index += Selection[i]*i;
+  }
+  copy_bits( MEM_Instruction[index] , Instruction );
 }
 
 void Control(BIT* OpCode,
@@ -622,8 +619,9 @@ void updateState()
   // Write Back - write to the register file
   // Update PC - determine the final PC value for the next instruction
 
+  BIT ReadAddress[5] = { PC[0], PC[1], PC[2], PC[3], PC[4] };
   BIT Instruction[32] = {FALSE};
-  Instruction_Memory( PC , Instruction );
+  Instruction_Memory( ReadAddress, Instruction );
 
 
 
