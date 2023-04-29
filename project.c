@@ -556,7 +556,12 @@ void Read_Register(BIT* ReadRegister1, BIT* ReadRegister2,
   // Input: two 5-bit register addresses
   // Output: the values of the specified registers in ReadData1 and ReadData2
   // Note: Implementation will be very similar to instruction memory circuit
-  
+  BIT converted1[32] = {FALSE};
+  BIT converted2[32] = {FALSE};
+  decoder5(ReadRegister1, TRUE, converted1);
+  decoder5(ReadRegister2, TRUE, converted2);
+  copy_bits(ReadData1, converted1);
+  copy_bits(ReadData2, converted2);
 }
 
 void Write_Register(BIT RegWrite, BIT* WriteRegister, BIT* WriteData)
@@ -565,8 +570,12 @@ void Write_Register(BIT RegWrite, BIT* WriteRegister, BIT* WriteData)
   // Input: one 5-bit register address, data to write, and control bit
   // Output: None, but will modify register file
   // Note: Implementation will again be similar to those above
-  
-  
+  BIT converted[32] = {FALSE};
+  decoder5(WriteRegister, TRUE, converted);
+  int index = binary_to_integer(converted);
+  if(RegWrite){
+    copy_bits(MEM_Register[index], WriteData);
+  }
 }
 
 void ALU_Control(BIT* ALUOp, BIT* funct, BIT* ALUControl)
@@ -601,11 +610,7 @@ void Data_Memory(BIT MemWrite, BIT MemRead,
   // Input: 32-bit address, control flags for read/write, and data to write
   // Output: data read if processing a lw instruction
   // Note: Implementation similar as above
-  // if(){
-
-  // }
-  // Write_Register();
-  // Read_Register();
+  
 }
 
 void Extend_Sign16(BIT* Input, BIT* Output)
@@ -655,6 +660,34 @@ void updateState()
   //   Instruction_Memory(ReadAddress, MEM_Instruction[count]);
   //   count++;
   // }
+  BIT Address[32] = {FALSE};
+  int count = binary_to_integer(PC);
+  if(count >= 0){
+    Instruction_Memory(Address, MEM_Instruction[count]);
+  }
+  // Decode
+  BIT ReadRegister1[5] = {FALSE};
+  for(int i = 25; i >= 21; i--){
+    ReadRegister1[i-21] = Address[i];
+  }
+  BIT ReadRegister2[5] = {FALSE};
+  for(int i = 20; i >= 16; i--){
+    ReadRegister2[i-16] = Address[i];
+  }
+  // if(){ // Not R-type
+  //   Data_Memory(MemWrite,MemRead,Address,Read_data2,);
+  // }
+  // Execute (ALU)
+
+  // Memory - Read/Write data memory
+  BIT ReadData1[32] = {FALSE};
+  BIT ReadData2[32] = {FALSE};
+  Read_Register(ReadRegister1, ReadRegister2, ReadData1, ReadData2);
+  Write_Register(RegWrite,,ReadData2);
+  Data_Memory(MemWrite,MemRead,Address,,);
+  
+  // Write back (Datapath)
+  // multiplexor2(MemRead,ReadData,Address);
 }
 
 
