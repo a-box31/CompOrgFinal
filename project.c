@@ -53,6 +53,7 @@ BIT multiplexor2(BIT S, BIT I0, BIT I1);
 void multiplexor2_32(BIT S, BIT* I0, BIT* I1, BIT* Output);
 BIT multiplexor4(BIT S0, BIT S1, BIT I0, BIT I1, BIT I2, BIT I3);
 
+BIT is_zero( BIT* input, int length );
 void copy_bits(BIT* A, BIT* B);
 void print_binary(BIT* A);
 void convert_to_binary(int a, BIT* A, int length);
@@ -69,8 +70,14 @@ void Control(BIT* OpCode,
 void Read_Register(BIT* ReadRegister1, BIT* ReadRegister2,
   BIT* ReadData1, BIT* ReadData2);
 void Write_Register(BIT RegWrite, BIT* WriteRegister, BIT* WriteData);
+
+
 void ALU_Control(BIT* ALUOp, BIT* funct, BIT* ALUControl);
+void ALU1(BIT A, BIT B, BIT Binvert, BIT CarryIn, BIT Less, BIT Op0, BIT Op1, BIT* Result, BIT* CarryOut, BIT* Set);
+void ALU32(BIT* A, BIT* B, BIT Binvert, BIT CarryIn, BIT Op0, BIT Op1, BIT* Result, BIT* CarryOut);
 void ALU(BIT* ALUControl, BIT* Input1, BIT* Input2, BIT* Zero, BIT* Result);
+
+
 void Data_Memory(BIT MemWrite, BIT MemRead, 
   BIT* Address, BIT* WriteData, BIT* ReadData);
 void Extend_Sign16(BIT* Input, BIT* Output);
@@ -213,6 +220,15 @@ BIT multiplexor4(BIT S0, BIT S1, BIT I0, BIT I1, BIT I2, BIT I3)
 /******************************************************************************/
 /* Helper functions */
 /******************************************************************************/
+BIT is_zero( BIT* input, int length ){
+  BIT zero = TRUE;
+  for( int i = 0; i < length; i++ ){
+    zero = and_gate( zero, not_gate(input[i]) );
+  }
+  return zero;
+}
+
+
 void copy_bits(BIT* A, BIT* B)
 {
   for (int i = 0; i < 32; ++i)
@@ -598,7 +614,48 @@ void ALU_Control(BIT* ALUOp, BIT* funct, BIT* ALUControl)
   ALUControl[1] = or_gate( not_gate( funct[2] ) , or_gate( and_gate( not_gate(ALUOp[1]), not_gate(ALUOp[0]) ) , ALUOp[0] ) ) ;
   ALUControl[0] = and_gate( ALUOp[1], or_gate( and_gate(funct[3], funct[1]) , and_gate(funct[2], funct[0]) ) );
 
+}
 
+void ALU1(BIT A, BIT B, BIT Binvert, BIT CarryIn, BIT Less, 
+          BIT Op0, BIT Op1, BIT* Result, BIT* CarryOut, BIT* Set)
+{
+  // TODO: implement a 1-bit ALU 
+  // Note: this will need modifications from Lab 5 to account for 'slt'
+  // See slide 30 in Chapter-3d
+  
+  BIT x0 = multiplexor2(Binvert, B, not_gate(B));
+  
+  BIT y0 = and_gate(A, x0);
+  BIT y1 = or_gate(A, x0);
+  
+  BIT y2 = FALSE;
+  adder1(A, x0, CarryIn, CarryOut, &y2); 
+  *Set = y2;
+
+  BIT y3 = Less;
+
+  *Result = multiplexor4(Op0, Op1, y0, y1, y2, y3);
+}
+
+void ALU32(BIT* A, BIT* B, BIT Binvert, BIT CarryIn, 
+           BIT Op0, BIT Op1, BIT* Result, BIT* CarryOut)
+{
+  // TODO: implement a 32-bit ALU
+  // You'll need to essentially implement a 32-bit ripple addder here
+  // See slide 31 in Chapter-3d
+  
+  BIT Less = FALSE;
+  BIT Set = FALSE;
+  ALU1(A[0], B[0], Binvert, CarryIn, Less, 
+    Op0, Op1, &Result[0], CarryOut, &Set);
+  for (int i = 1; i < 32; ++i) {
+    ALU1(A[i], B[i], Binvert, *CarryOut, Less, 
+      Op0, Op1, &Result[i], CarryOut, &Set);
+  }
+  
+  Less = Set;
+  ALU1(A[0], B[0], Binvert, CarryIn, Less, 
+    Op0, Op1, &Result[0], CarryOut, &Set);
 }
 
 void ALU(BIT* ALUControl, BIT* Input1, BIT* Input2, BIT* Zero, BIT* Result)
@@ -608,6 +665,24 @@ void ALU(BIT* ALUControl, BIT* Input1, BIT* Input2, BIT* Zero, BIT* Result)
   // Output: 32-bit result, and zero flag big
   // Note: Can re-use prior implementations (but need new circuitry for zero)
   
+  // SET CONTROL BITS
+  BIT Op0 = or_gate(
+      or_gate(
+        and_gate(ALUControl[0], and_gate(not_gate(ALUControl[1]), not_gate(ALUControl[2]))),
+        and_gate(not_gate(ALUControl[0]), and_gate(ALUControl[1], not_gate(ALUControl[2])))),
+      and_gate(ALUControl[0], and_gate(not_gate(ALUControl[1]), ALUControl[2])));
+  BIT Op1 = or_gate(and_gate(ALUControl[0], ALUControl[1]), ALUControl[2]);
+  BIT Binvert = ALUControl[2];
+  BIT CarryIn = Binvert;
+  BIT CarryOut = FALSE;
+  BIT Y0[32] = {FALSE};
+  // get ALU output
+  ALU32( Input1, Input2, CarryIn, Op0, Op1, Y0, &CarryOut );
+
+  // set the zero bit and return
+  *Zero = is_zero(Y0, 32);
+  copy_bits(Y0, Result); 
+
 }
 
 void Data_Memory(BIT MemWrite, BIT MemRead, 
