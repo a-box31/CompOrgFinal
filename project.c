@@ -520,9 +520,7 @@ void Instruction_Memory(BIT* ReadAddress, BIT* Instruction)
   // Input: 32-bit instruction address
   // Output: 32-bit binary instruction
   // Note: Useful to use a 5-to-32 decoder here
-  for(int i = 31; i >= 0; i--){
-    Instruction[i] = ReadAddress[i];
-  }
+
 }
 
 void Control(BIT* OpCode,
@@ -571,7 +569,13 @@ void ALU_Control(BIT* ALUOp, BIT* funct, BIT* ALUControl)
   //        binary instruction
   // Output:4-bit ALUControl for input into the ALU
   // Note: Can use SOP or similar approaches to determine bits
-  
+
+  ALUControl[3] = FALSE;
+  ALUControl[2] = or_gate( ALUOp[0], funct[1] );
+  ALUControl[1] = or_gate( not_gate( funct[2], or_gate( and_gate( not_gate(ALUOp[1]), not_gate(ALUOp[0]) ) , ALUOp[0] ) ) );
+  ALUControl[0] = and_gate( ALUOp[1], or_gate( and_gate(funct[3], funct[1]) , and_gate(funct[2], funct[0]) ) );
+
+
 }
 
 void ALU(BIT* ALUControl, BIT* Input1, BIT* Input2, BIT* Zero, BIT* Result)
@@ -618,13 +622,31 @@ void updateState()
   // Write Back - write to the register file
   // Update PC - determine the final PC value for the next instruction
 
+  BIT Instruction[32] = {FALSE};
+  Instruction_Memory( PC , Instruction );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   // Fetch
-  BIT ReadAddress[32] = {FALSE};
-  int count = 0;
-  while(PC[count] == TRUE){
-    Instruction_Memory(ReadAddress, MEM_Instruction[count]);
-    count++;
-  }
+  // BIT ReadAddress[32] = {FALSE};
+  // int count = 0;
+  // while(PC[count] == TRUE){
+  //   Instruction_Memory(ReadAddress, MEM_Instruction[count]);
+  //   count++;
+  // }
 }
 
 
@@ -644,11 +666,14 @@ int main()
   copy_bits(ZERO, PC);
   copy_bits(THIRTY_TWO, MEM_Register[29]);
   
-  // while (binary_to_integer(PC) < counter) {
-  //   print_instruction();
-  //   updateState();
-  //   print_state();
-  // }
+  while (binary_to_integer(PC) < counter) {
+    print_instruction();
+    updateState();
+    print_state();
+  }
+
+
+
   while (binary_to_integer(PC) < counter) {
     print_instruction();
     updateState();
