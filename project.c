@@ -513,10 +513,12 @@ void Instruction_Memory(BIT* ReadAddress, BIT* Instruction)
   BIT Selection[32] = {FALSE};
   decoder5( ReadAddress, TRUE , Selection );
 
+  // use the selection bits to find index
   unsigned int index = 0;
   for( int i = 0; i < 32; i++ ){
     index += Selection[i]*i;
   }
+  // get the memory instruction
   copy_bits( MEM_Instruction[index] , Instruction );
 }
 
