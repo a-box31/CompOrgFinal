@@ -545,7 +545,8 @@ void Control(BIT* OpCode,
 
   // SET BITS
   RegDst = isRType;
-  // ALUSrc = 
+  ALUSrc = OpCode[0];
+  
 
 }
 
