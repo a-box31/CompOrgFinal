@@ -540,8 +540,8 @@ void Control(BIT* OpCode,
                        and_gate3( not_gate(OpCode[2]) , OpCode[1],           OpCode[0]           ) );
   BIT isSW = and_gate( and_gate3( OpCode[0], OpCode[1], not_gate(OpCode[2]) ), 
                        and_gate3( OpCode[3], not_gate(OpCode[4]), OpCode[5] ) );
-  BIT isBEQ = and_gate( not_gate(OpCode[0]), not_gate(OpCode[1]), OpCode[2], 
-                        not_gate(OpCode[3]), not_gate(OpCode[4]), not_gate(OpCode[5]) );
+  BIT isBEQ = and_gate( and_gate3(not_gate(OpCode[0]), not_gate(OpCode[1]), OpCode[2]), 
+                        and_gate3(not_gate(OpCode[3]), not_gate(OpCode[4]), not_gate(OpCode[5])) );
 
   // SET BITS
   RegDst = isRType;
@@ -643,15 +643,15 @@ void updateState()
   // Decode
   BIT ReadRegister1[5] = {FALSE};
   for(int i = 25; i >= 21; i--){
-    ReadRegister1[i-21] = Address[i];
+    ReadRegister1[i-21] = ReadAddress[i];
   }
   BIT ReadRegister2[5] = {FALSE};
   for(int i = 20; i >= 16; i--){
-    ReadRegister2[i-16] = Address[i];
+    ReadRegister2[i-16] = ReadAddress[i];
   }
   BIT ReadInstruction[5] = {FALSE};
   for(int i = 15; i >= 11; i--){
-    ReadRegister2[i-11] = Address[i];
+    ReadRegister2[i-11] = ReadAddress[i];
   }
   BIT WriteData = multiplexor2(RegDst,ReadRegister2,ReadInstruction);
   BIT ReadData1[32] = {FALSE};
@@ -688,23 +688,16 @@ int main()
   // load program and run
   copy_bits(ZERO, PC);
   copy_bits(THIRTY_TWO, MEM_Register[29]);
-  
-  // while (binary_to_integer(PC) < counter) {
-  //   print_instruction();
-  //   updateState();
-  //   print_state();
-  // }
 
 
-
-  // while (binary_to_integer(PC) < counter) {
-  //   print_instruction();
-  //   updateState();
-  //   print_state();
-  //   int pc = binary_to_integer(PC);
-  //   ++pc;
-  //   convert_to_binary(pc, PC, 32);
-  // }
+  while (binary_to_integer(PC) < counter) {
+    print_instruction();
+    updateState();
+    print_state();
+    int pc = binary_to_integer(PC);
+    ++pc;
+    convert_to_binary(pc, PC, 32);
+  }
 
   return 0;
 }
