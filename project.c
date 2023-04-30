@@ -595,7 +595,7 @@ void Write_Register(BIT RegWrite, BIT* WriteRegister, BIT* WriteData)
   // Note: Implementation will again be similar to those above
   BIT converted[32] = {FALSE};
   decoder5(WriteRegister, TRUE, converted);
-  int index = binary_to_integer(converted);
+  binary_to_integer(converted);
   if(RegWrite){
     copy_bits(MEM_Register[index], WriteData);
   }
