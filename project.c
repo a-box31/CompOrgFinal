@@ -679,7 +679,7 @@ void ALU(BIT* ALUControl, BIT* Input1, BIT* Input2, BIT* Zero, BIT* Result)
   BIT CarryOut = FALSE;
   BIT Y0[32] = {FALSE};
   // get ALU output
-  ALU32( Input1, Input2, CarryIn, Op0, Op1, Y0, &CarryOut );
+  ALU32( Input1, Input2, Binvert, CarryIn, Op0, Op1, Y0, &CarryOut );
 
   // set the zero bit and return
   *Zero = is_zero(Y0, 32);
@@ -747,18 +747,19 @@ void updateState()
 
   // Decode- set control bits and read from the register file
   // ---------------------------------------------------------------------------
+  
 
   BIT ReadRegister1[5] = {FALSE};
   for(int i = 25; i >= 21; i--){
-    ReadRegister1[i-21] = ReadAddress[i];
+    ReadRegister1[i-21] = Instruction[i];
   }
   BIT ReadRegister2[5] = {FALSE};
   for(int i = 20; i >= 16; i--){
-    ReadRegister2[i-16] = ReadAddress[i];
+    ReadRegister2[i-16] = Instruction[i];
   }
   BIT ReadInstruction[5] = {FALSE};
   for(int i = 15; i >= 11; i--){
-    ReadRegister2[i-11] = ReadAddress[i];
+    ReadInstruction[i-11] = Instruction[i];
   }
 
   // set control bits
@@ -769,6 +770,11 @@ void updateState()
   Control( OpCode, RegDst, Jump, Branch, MemRead, MemToReg, ALUOp, MemWrite, ALUSrc, RegWrite );
 
   // read from the register file
+  BIT WriteRegister[5] = FALSE;
+  for(int i = 4; i >= 0; i--){
+    WriteRegister[i] = multiplexor2(RegDst,ReadRegister2[i],ReadInstruction[i]);
+  }
+  // Write_Register(RegWrite,WriteRegister,);
   BIT ReadData1[32] = {FALSE};
   BIT ReadData2[32] = {FALSE};
   Read_Register(ReadRegister1, ReadRegister2, ReadData1, ReadData2);
