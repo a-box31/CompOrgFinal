@@ -722,6 +722,8 @@ void updateState()
   // Write Back - write to the register file
   // Update PC - determine the final PC value for the next instruction
 
+  BIT* Zero = FALSE;
+
   // Fetch
   BIT ReadAddress[5] = { PC[0], PC[1], PC[2], PC[3], PC[4] };
   BIT Instruction[32] = {FALSE};
@@ -740,20 +742,27 @@ void updateState()
   for(int i = 15; i >= 11; i--){
     ReadRegister2[i-11] = ReadAddress[i];
   }
-  BIT WriteData = multiplexor2(RegDst,ReadRegister2,ReadInstruction);
+  // BIT Write = multiplexor2(RegDst,ReadRegister2,ReadInstruction);
+  BIT* WriteRegister = FALSE;
+  Write_Register(RegWrite,WriteRegister,);
   BIT ReadData1[32] = {FALSE};
   BIT ReadData2[32] = {FALSE};
   Read_Register(ReadRegister1, ReadRegister2, ReadData1, ReadData2);
-  // if(){ // Not R-type
-  //   Data_Memory(MemWrite,MemRead,Address,Read_data2,);
-  // }
 
-  // Execute (ALU)
-  // BIT readmultiplexor2
+  // Execute
+  BIT funct[6] = {FALSE};
+  for(int i = 5; i >= 0; i--){
+    funct[i] = Instruction[i];
+  }
+  ALU_Control(ALUOp,funct,ALUControl);
+  BIT immediate[16] = {FALSE};
+  BIT second = multiplexor2(ALUSrc, ReadData2, );
+  BIT result[32] = {FALSE};
+  ALU(ALUControl, ReadData1, second, Zero, result);
 
-  // Memory - Read/Write data memory
-  // Write_Register(RegWrite,,ReadData2);
-  // Data_Memory(MemWrite,MemRead,Address,,);
+  // Memory
+  Data_Memory(MemWrite,MemRead,result,ReadData2,);
+  // NEED TO MAKE IT NOT OPERATE ON R TYPE INSTRUCTIONS
   
   // Write back (Datapath)
   // multiplexor2(MemRead,ReadData,Address);
