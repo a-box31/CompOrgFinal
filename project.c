@@ -779,13 +779,13 @@ void updateState()
   BIT ReadData2[32] = {FALSE};
   Read_Register(ReadRegister1, ReadRegister2, ReadData1, ReadData2);
 
-  // Execute
+  // Execute - process ALU
   // ---------------------------------------------------------------------------
   BIT funct[6] = {FALSE};
   for(int i = 5; i >= 0; i--){
     funct[i] = Instruction[i];
   }
-  ALU_Control(ALUOp,funct,ALUControl);
+  ALU_Control( ALUOp , funct , ALUControl );
   BIT immediate[16] = {FALSE};
   for(int i = 15; i >= 0; i--){
     immediate[i] = Instruction[i];
@@ -799,14 +799,15 @@ void updateState()
   BIT result[32] = {FALSE};
   ALU(ALUControl, ReadData1, second, Zero, result);
 
-  // Memory
+
+  // Memory - read/write data memory
   // ---------------------------------------------------------------------------
   BIT ReadData[32] = {FALSE};
   Data_Memory(MemWrite,MemRead,result,ReadData2,ReadData);
   // NEED TO MAKE IT NOT OPERATE ON R TYPE INSTRUCTIONS
   
 
-  // Write back
+  // Write back - write to the register file
   // ---------------------------------------------------------------------------
   BIT WriteData = multiplexor2(RegDst,ReadRegister2,ReadInstruction);
   BIT* WriteRegister[5] = {};
