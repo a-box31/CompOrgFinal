@@ -821,18 +821,24 @@ void updateState()
   // update pc for next instruction
   BIT nextPc[32] = {FALSE};
   BIT CarryOut = FALSE;
-  BIT Set = FALSE;
   ALU32( PC, ONE, FALSE, FALSE, TRUE, FALSE, nextPc, &CarryOut);
 
-
-
-  // Update PC
-  BIT* CarryOut = FALSE;
-  BIT* Result = FALSE;
-  ALU32(PC,ONE,FALSE,FALSE,TRUE,FALSE,Result,CarryOut);
   BIT jumpAddress[32] = {FALSE};
-  for(int i = 26; i >= 0; i--){
+  for(int i = 25; i >= 0; i--){
     jumpAddress[i] = Instruction[i];
+  }
+  BIT branchPC[32] = {FALSE};
+
+  CarryOut = FALSE;
+  ALU32(nextPc,immediate32,FALSE,FALSE,TRUE,FALSE,branchPC,CarryOut);
+
+  BIT bqe = and_gate(Branch, Zero);
+  for(int i = 31; i >= 0; i--){
+    PC[i] = multiplexor2(bqe, nextPc, branchPC);
+  }
+
+  for(int i = 31; i >= 0; i--){
+    PC[i] = multiplexor2(Jump, jumpAddress, branchPC);
   }
 }
 
