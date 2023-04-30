@@ -787,14 +787,22 @@ void updateState()
   }
   ALU_Control(ALUOp,funct,ALUControl);
   BIT immediate[16] = {FALSE};
-  BIT second = multiplexor2(ALUSrc, ReadData2, );
+  for(int i = 15; i >= 0; i--){
+    immediate[i] = Instruction[i];
+  }
+  BIT immediate32[32] = {FALSE};
+  Extend_Sign16(immediate, immediate32);
+  BIT second[32] = {FALSE};
+  for(int i = 31; i >= 0; i--){
+    second[i] = multiplexor2(ALUSrc, ReadData2[i], immediate32[i]);
+  }
   BIT result[32] = {FALSE};
   ALU(ALUControl, ReadData1, second, Zero, result);
 
-
   // Memory
   // ---------------------------------------------------------------------------
-  Data_Memory(MemWrite,MemRead,result,ReadData2,);
+  BIT ReadData[32] = {FALSE};
+  Data_Memory(MemWrite,MemRead,result,ReadData2,ReadData);
   // NEED TO MAKE IT NOT OPERATE ON R TYPE INSTRUCTIONS
   
 
