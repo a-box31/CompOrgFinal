@@ -695,7 +695,20 @@ void Data_Memory(BIT MemWrite, BIT MemRead,
   // Input: 32-bit address, control flags for read/write, and data to write
   // Output: data read if processing a lw instruction
   // Note: Implementation similar as above
-  
+
+  BIT selector[32] = {FALSE};
+  BIT addr[5] = { Address[0], Address[1], Address[2], Address[3], Address[4] };
+  decoder5( addr , TRUE, selector );
+  unsigned int index = 0;
+  for(int i = 0; i < 32; i++){
+    index += selector[i]*i;
+  }
+  for( int i = 0; i < 32; i++){
+    ReadData[i] = multiplexor2(MemRead, ReadData[i], MEM_DATA[index][i] );
+  }
+  for( int i = 0; i < 32; i++){
+    MEM_DATA[index][i] = multiplexor2(MemWrite, MEM_DATA[index][i], WriteData[i] );
+  }
 }
 
 void Extend_Sign16(BIT* Input, BIT* Output)
@@ -728,11 +741,13 @@ void updateState()
   BIT* Zero = FALSE;
 
   // Fetch
+  // ---------------------------------------------------------------------------
   BIT ReadAddress[5] = { PC[0], PC[1], PC[2], PC[3], PC[4] };
   BIT Instruction[32] = {FALSE};
   Instruction_Memory( ReadAddress, Instruction );
 
   // Decode
+  // ---------------------------------------------------------------------------
   BIT ReadRegister1[5] = {FALSE};
   for(int i = 25; i >= 21; i--){
     ReadRegister1[i-21] = ReadAddress[i];
@@ -747,12 +762,13 @@ void updateState()
   }
   // BIT Write = multiplexor2(RegDst,ReadRegister2,ReadInstruction);
   BIT* WriteRegister = FALSE;
-  BIT WriteData = multiplexor2(RegDst,ReadRegister2,ReadInstruction);
+  Write_Register(RegWrite,WriteRegister,);
   BIT ReadData1[32] = {FALSE};
   BIT ReadData2[32] = {FALSE};
   Read_Register(ReadRegister1, ReadRegister2, ReadData1, ReadData2);
 
   // Execute
+  // ---------------------------------------------------------------------------
   BIT funct[6] = {FALSE};
   for(int i = 5; i >= 0; i--){
     funct[i] = Instruction[i];
@@ -763,12 +779,21 @@ void updateState()
   BIT result[32] = {FALSE};
   ALU(ALUControl, ReadData1, second, Zero, result);
 
+
   // Memory
+  // ---------------------------------------------------------------------------
   Data_Memory(MemWrite,MemRead,result,ReadData2,);
   // NEED TO MAKE IT NOT OPERATE ON R TYPE INSTRUCTIONS
   
-  // Write back (Datapath)
-  // multiplexor2(MemRead,ReadData,Address);
+
+  // Write back
+  // ---------------------------------------------------------------------------
+  BIT WriteData = multiplexor2(RegDst,ReadRegister2,ReadInstruction);
+  BIT* WriteRegister[5] = {};
+  Write_Register(RegWrite,WriteRegister,);
+
+  
+
 }
 
 
