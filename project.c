@@ -810,10 +810,18 @@ void updateState()
   // Write back - write to the register file
   // ---------------------------------------------------------------------------
   BIT WriteData = multiplexor2(RegDst,ReadRegister2,ReadInstruction);
-  BIT* WriteRegister[5] = {};
-  Write_Register(RegWrite,WriteRegister,);
-
+  BIT* WriteData[32] = {FALSE};
   
+  // Update PC - determine the final PC value for the next instruction
+  // ---------------------------------------------------------------------------
+
+  // update pc for next instruction
+  BIT nextPc[32] = {FALSE};
+  BIT CarryOut = FALSE;
+  BIT Set = FALSE;
+  ALU32( PC, ONE, FALSE, FALSE, TRUE, FALSE, nextPc, &CarryOut);
+
+
 
 }
 
