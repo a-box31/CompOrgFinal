@@ -680,7 +680,7 @@ void ALU(BIT* ALUControl, BIT* Input1, BIT* Input2, BIT* Zero, BIT* Result)
   BIT CarryOut = FALSE;
   BIT Y0[32] = {FALSE};
   // get ALU output
-  ALU32( Input1, Input2, CarryIn, Op0, Op1, Y0, &CarryOut );
+  ALU32( Input1, Input2, Binvert, CarryIn, Op0, Op1, Y0, &CarryOut );
 
   // set the zero bit and return
   *Zero = is_zero(Y0, 32);
@@ -747,7 +747,7 @@ void updateState()
   }
   // BIT Write = multiplexor2(RegDst,ReadRegister2,ReadInstruction);
   BIT* WriteRegister = FALSE;
-  Write_Register(RegWrite,WriteRegister,);
+  BIT WriteData = multiplexor2(RegDst,ReadRegister2,ReadInstruction);
   BIT ReadData1[32] = {FALSE};
   BIT ReadData2[32] = {FALSE};
   Read_Register(ReadRegister1, ReadRegister2, ReadData1, ReadData2);
