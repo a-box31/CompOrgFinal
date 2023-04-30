@@ -53,6 +53,7 @@ BIT multiplexor2(BIT S, BIT I0, BIT I1);
 void multiplexor2_32(BIT S, BIT* I0, BIT* I1, BIT* Output);
 BIT multiplexor4(BIT S0, BIT S1, BIT I0, BIT I1, BIT I2, BIT I3);
 
+
 BIT is_zero( BIT* input, int length );
 void copy_bits(BIT* A, BIT* B);
 void print_binary(BIT* A);
@@ -70,6 +71,7 @@ void Control(BIT* OpCode,
 void Read_Register(BIT* ReadRegister1, BIT* ReadRegister2, BIT* ReadData1, BIT* ReadData2);
 void Write_Register(BIT RegWrite, BIT* WriteRegister, BIT* WriteData);
 
+void adder1(BIT A, BIT B, BIT CarryIn, BIT* CarryOut, BIT* Sum)
 
 void ALU_Control(BIT* ALUOp, BIT* funct, BIT* ALUControl);
 void ALU1(BIT A, BIT B, BIT Binvert, BIT CarryIn, BIT Less, BIT Op0, BIT Op1, BIT* Result, BIT* CarryOut, BIT* Set);
@@ -603,6 +605,22 @@ void Write_Register(BIT RegWrite, BIT* WriteRegister, BIT* WriteData)
   }
 }
 
+
+void adder1(BIT A, BIT B, BIT CarryIn, BIT* CarryOut, BIT* Sum)
+{
+  // TODO: implement a 1-bit adder
+  // Note: you can copy+paste this from your or my Lab 5
+  
+  BIT x0 = xor_gate(A, B);
+  *Sum = xor_gate(CarryIn, x0);
+  
+  BIT y0 = and_gate(x0, CarryIn);
+  BIT y1 = and_gate(A, B);
+  *CarryOut = or_gate(y0, y1);
+}
+
+
+
 void ALU_Control(BIT* ALUOp, BIT* funct, BIT* ALUControl)
 {
   // TODO: Implement ALU Control circuit
@@ -840,6 +858,7 @@ void updateState()
   for(int i = 31; i >= 0; i--){
     PC[i] = multiplexor2(Jump, jumpAddress, branchPC);
   }
+
 }
 
 
