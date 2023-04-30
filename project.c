@@ -748,21 +748,25 @@ void updateState()
 
   // Decode
   // ---------------------------------------------------------------------------
+  
+
   BIT ReadRegister1[5] = {FALSE};
   for(int i = 25; i >= 21; i--){
-    ReadRegister1[i-21] = ReadAddress[i];
+    ReadRegister1[i-21] = Instruction[i];
   }
   BIT ReadRegister2[5] = {FALSE};
   for(int i = 20; i >= 16; i--){
-    ReadRegister2[i-16] = ReadAddress[i];
+    ReadRegister2[i-16] = Instruction[i];
   }
   BIT ReadInstruction[5] = {FALSE};
   for(int i = 15; i >= 11; i--){
-    ReadRegister2[i-11] = ReadAddress[i];
+    ReadInstruction[i-11] = Instruction[i];
   }
-  // BIT Write = multiplexor2(RegDst,ReadRegister2,ReadInstruction);
-  BIT* WriteRegister = FALSE;
-  Write_Register(RegWrite,WriteRegister,);
+  BIT WriteRegister[5] = FALSE;
+  for(int i = 4; i >= 0; i--){
+    WriteRegister[i] = multiplexor2(RegDst,ReadRegister2[i],ReadInstruction[i]);
+  }
+  // Write_Register(RegWrite,WriteRegister,);
   BIT ReadData1[32] = {FALSE};
   BIT ReadData2[32] = {FALSE};
   Read_Register(ReadRegister1, ReadRegister2, ReadData1, ReadData2);
