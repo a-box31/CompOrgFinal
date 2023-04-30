@@ -595,9 +595,12 @@ void Write_Register(BIT RegWrite, BIT* WriteRegister, BIT* WriteData)
   // Note: Implementation will again be similar to those above
   BIT converted[32] = {FALSE};
   decoder5(WriteRegister, TRUE, converted);
-  binary_to_integer(converted);
-  if(RegWrite){
-    copy_bits(MEM_Register[index], WriteData);
+  unsigned int index = 0;
+  for(int i = 0; i < 32; i++){
+    index += converted[i]*i;
+  }
+  for( int i = 0 ; i < 32 ; i++ ){
+    MEM_Register[index][i] = multiplexor2( RegWrite , MEM_Register[index][i], WriteData );
   }
 }
 
