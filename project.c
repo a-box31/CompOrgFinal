@@ -559,13 +559,13 @@ void Control(BIT* OpCode,
                         and_gate3( not_gate(OpCode[3]), not_gate(OpCode[4]), not_gate(OpCode[5]) ) );
 
   // SET BITS
-  RegDst = isRType;
-  ALUSrc = OpCode[0];
-  MemToReg = isLW;
-  RegWrite = or_gate( isRType, isLW );
-  MemRead = isLW;
-  MemWrite = isSW;
-  Branch = isBEQ;
+  *RegDst = isRType;
+  *ALUSrc = OpCode[0];
+  *MemToReg = isLW;
+  *RegWrite = or_gate( isRType, isLW );
+  *MemRead = isLW;
+  *MemWrite = isSW;
+  *Branch = isBEQ;
   ALUOp[1] = isRType;
   ALUOp[0] = isBEQ;
 
@@ -599,7 +599,7 @@ void Write_Register(BIT RegWrite, BIT* WriteRegister, BIT* WriteData)
     index += converted[i]*i;
   }
   for( int i = 0 ; i < 32 ; i++ ){
-    MEM_Register[index][i] = multiplexor2( RegWrite , MEM_Register[index][i], WriteData );
+    MEM_Register[index][i] = multiplexor2( RegWrite , MEM_Register[index][i], WriteData[i]);
   }
 }
 
@@ -703,10 +703,10 @@ void Data_Memory(BIT MemWrite, BIT MemRead,
     index += selector[i]*i;
   }
   for( int i = 0; i < 32; i++){
-    ReadData[i] = multiplexor2(MemRead, ReadData[i], MEM_DATA[index][i] );
+    ReadData[i] = multiplexor2(MemRead, ReadData[i], MEM_Data[index][i] );
   }
   for( int i = 0; i < 32; i++){
-    MEM_DATA[index][i] = multiplexor2(MemWrite, MEM_DATA[index][i], WriteData[i] );
+    MEM_Data[index][i] = multiplexor2(MemWrite, MEM_Data[index][i], WriteData[i] );
   }
 }
 
@@ -717,7 +717,7 @@ void Extend_Sign16(BIT* Input, BIT* Output)
   for( int i = 0; i < 16 ; i++ ){
     Output[i] = Input[i];
   }
-  BIT sign_bit = input[15];
+  BIT sign_bit = Input[15];
   for( int i = 16; i < 32 ; i++ ){
     Output[i] = sign_bit;
   }
@@ -770,7 +770,7 @@ void updateState()
   Control( OpCode, RegDst, Jump, Branch, MemRead, MemToReg, ALUOp, MemWrite, ALUSrc, RegWrite );
 
   // read from the register file
-  BIT WriteRegister[5] = FALSE;
+  BIT WriteRegister[5] = {FALSE};
   for(int i = 4; i >= 0; i--){
     WriteRegister[i] = multiplexor2(RegDst,ReadRegister2[i],ReadInstruction[i]);
   }
@@ -809,11 +809,10 @@ void updateState()
   // ---------------------------------------------------------------------------
   BIT WriteData[32] = {FALSE};
   for(int i = 31; i >= 0; i--){
-    WriteData[i] = multiplexor2(MemtoReg,ReadData[i],result[i]);
+    WriteData[i] = multiplexor2(MemToReg,ReadData[i],result[i]);
   }
   Write_Register(RegWrite,WriteRegister,WriteData);
-  BIT WriteData = multiplexor2(RegDst,ReadRegister2,ReadInstruction);
-  BIT* WriteData[32] = {FALSE};
+
   
   // Update PC - determine the final PC value for the next instruction
   // ---------------------------------------------------------------------------
