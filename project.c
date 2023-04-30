@@ -803,18 +803,24 @@ void updateState()
   // Memory - read/write data memory
   // ---------------------------------------------------------------------------
   BIT ReadData[32] = {FALSE};
-  Data_Memory(MemWrite,MemRead,result,ReadData2,ReadData);
-  // NEED TO MAKE IT NOT OPERATE ON R TYPE INSTRUCTIONS
-  
+  Data_Memory(MemWrite,MemRead,result,ReadData2,ReadData);  
 
   // Write back - write to the register file
   // ---------------------------------------------------------------------------
-  BIT WriteData = multiplexor2(RegDst,ReadRegister2,ReadInstruction);
-  BIT* WriteRegister[5] = {};
-  Write_Register(RegWrite,WriteRegister,);
+  BIT WriteData[32] = {FALSE};
+  for(int i = 31; i >= 0; i--){
+    WriteData[i] = multiplexor2(MemtoReg,ReadData[i],result[i]);
+  }
+  Write_Register(RegWrite,WriteRegister,WriteData);
 
-  
-
+  // Update PC
+  BIT* CarryOut = FALSE;
+  BIT* Result = FALSE;
+  ALU32(PC,ONE,FALSE,FALSE,TRUE,FALSE,Result,CarryOut);
+  BIT jumpAddress[32] = {FALSE};
+  for(int i = 26; i >= 0; i--){
+    jumpAddress[i] = Instruction[i];
+  }
 }
 
 
