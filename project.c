@@ -67,8 +67,7 @@ void Instruction_Memory(BIT* ReadAddress, BIT* Instruction);
 void Control(BIT* OpCode,
   BIT* RegDst, BIT* Jump, BIT* Branch, BIT* MemRead, BIT* MemToReg,
   BIT* ALUOp, BIT* MemWrite, BIT* ALUSrc, BIT* RegWrite);
-void Read_Register(BIT* ReadRegister1, BIT* ReadRegister2,
-  BIT* ReadData1, BIT* ReadData2);
+void Read_Register(BIT* ReadRegister1, BIT* ReadRegister2, BIT* ReadData1, BIT* ReadData2);
 void Write_Register(BIT RegWrite, BIT* WriteRegister, BIT* WriteData);
 
 
@@ -740,14 +739,15 @@ void updateState()
 
   BIT* Zero = FALSE;
 
-  // Fetch
+  // Fetch - load instruction from instruction memory
   // ---------------------------------------------------------------------------
   BIT ReadAddress[5] = { PC[0], PC[1], PC[2], PC[3], PC[4] };
   BIT Instruction[32] = {FALSE};
   Instruction_Memory( ReadAddress, Instruction );
 
-  // Decode
+  // Decode- set control bits and read from the register file
   // ---------------------------------------------------------------------------
+
   BIT ReadRegister1[5] = {FALSE};
   for(int i = 25; i >= 21; i--){
     ReadRegister1[i-21] = ReadAddress[i];
@@ -761,7 +761,14 @@ void updateState()
     ReadRegister2[i-11] = ReadAddress[i];
   }
 
+  // set control bits
+  BIT OpCode[6] = {FALSE};
+  for(int i = 31; i >= 26; i-- ){
+    OpCode[i-26] = Instruction[i];
+  }
+  Control( OpCode, RegDst, Jump, Branch, MemRead, MemToReg, ALUOp, MemWrite, ALUSrc, RegWrite );
 
+  // read from the register file
   BIT ReadData1[32] = {FALSE};
   BIT ReadData2[32] = {FALSE};
   Read_Register(ReadRegister1, ReadRegister2, ReadData1, ReadData2);
