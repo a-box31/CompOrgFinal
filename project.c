@@ -606,11 +606,18 @@ void Read_Register(BIT* ReadRegister1, BIT* ReadRegister2,
   unsigned int index1 = 0;
   unsigned int index2 = 0;
   for(int i = 0; i < 32; i++){
-    index1 = converted1[i]*i;
-    index2 = converted2[i]*i;
+    index1 += converted1[i]*i;
+    index2 += converted2[i]*i;
   }
-  copy_bits(ReadData1, MEM_Register[index1]);
-  copy_bits(ReadData2, MEM_Register[index2]);
+
+  printf("\nReg Index: %d, %d\n", index1, index2 );
+  print_binary(MEM_Register[index1]);
+  printf("\n");
+  print_binary(MEM_Register[index2]);
+  printf("\n");
+
+  copy_bits( MEM_Register[index1], ReadData1 );
+  copy_bits( MEM_Register[index2] , ReadData2 );
 }
 
 void Write_Register(BIT RegWrite, BIT* WriteRegister, BIT* WriteData)
@@ -786,10 +793,12 @@ void updateState()
   BIT ReadAddress[5] = { PC[0], PC[1], PC[2], PC[3], PC[4] };
   BIT Instruction[32] = {FALSE};
   Instruction_Memory( ReadAddress, Instruction );
+
+
   // Decode- set control bits and read from the register file
   // ---------------------------------------------------------------------------
   
-
+  // Split the instructions for potential fields for different instruction types
   BIT ReadRegister1[5] = {FALSE};
   for(int i = 25; i >= 21; i--){
     ReadRegister1[i-21] = Instruction[i];
@@ -811,13 +820,18 @@ void updateState()
   // read from the register file
   BIT WriteRegister[5] = {FALSE};
   for(int i = 4; i >= 0; i--){
-    WriteRegister[i] = multiplexor2(RegDst,ReadRegister2[i],ReadInstruction[i]);
+    WriteRegister[i] = multiplexor2( RegDst, ReadRegister2[i] , ReadInstruction[i] );
   }
-  // Write_Register(RegWrite,WriteRegister,);
+
+
   BIT ReadData1[32] = {FALSE};
   BIT ReadData2[32] = {FALSE};
-  Read_Register(ReadRegister1, ReadRegister2, ReadData1, ReadData2);
-  
+  Read_Register( ReadRegister1 , ReadRegister2 , ReadData1 , ReadData2 );
+  // print_binary(ReadData1);
+  // printf("\n");
+  // print_binary(ReadData2);
+  // printf("\n");
+
   // // Execute - process ALU
   // // ---------------------------------------------------------------------------
   BIT funct[6] = {FALSE};
