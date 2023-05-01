@@ -390,11 +390,10 @@ int get_instructions(BIT Instructions[][32])
 
     }else if(type == 'r'){
 
-      char reg1[5]; // Rs field
-      char reg2[5]; // Rt field
-      char reg3[5]; // Rd field
+      char reg1[5]; // Rd field
+      char reg2[5]; // Rs field
+      char reg3[5]; // Rt field
       sscanf(line, "%s %s %s %s", opcode, reg1, reg2, reg3);
-
       // Registers rs, rt, rd data
       BIT reg1_bin[5] = {FALSE};
       BIT reg2_bin[5] = {FALSE};
@@ -592,13 +591,6 @@ void Read_Register(BIT* ReadRegister1, BIT* ReadRegister2,
     index1 += converted1[i]*i;
     index2 += converted2[i]*i;
   }
-
-  printf("\nReg Index: %d, %d\n", index1, index2 );
-  print_binary(MEM_Register[index1]);
-  printf("\n");
-  print_binary(MEM_Register[index2]);
-  printf("\n");
-
   copy_bits( MEM_Register[index1], ReadData1 );
   copy_bits( MEM_Register[index2] , ReadData2 );
 }
@@ -805,18 +797,12 @@ void updateState()
   for(int i = 4; i >= 0; i--){
     WriteRegister[i] = multiplexor2( RegDst, ReadRegister2[i] , ReadInstruction[i] );
   }
-
-
   BIT ReadData1[32] = {FALSE};
   BIT ReadData2[32] = {FALSE};
   Read_Register( ReadRegister1 , ReadRegister2 , ReadData1 , ReadData2 );
-  // print_binary(ReadData1);
-  // printf("\n");
-  // print_binary(ReadData2);
-  // printf("\n");
 
-  // // Execute - process ALU
-  // // ---------------------------------------------------------------------------
+  // Execute - process ALU
+  // ---------------------------------------------------------------------------
   BIT funct[6] = {FALSE};
   for(int i = 5; i >= 0; i--){
     funct[i] = Instruction[i];
