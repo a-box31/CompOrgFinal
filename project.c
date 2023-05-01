@@ -58,7 +58,7 @@ void is_zero( BIT* input, int length, BIT* Zero);
 void copy_bits(BIT* A, BIT* B);
 void print_binary(BIT* A);
 void convert_to_binary(int a, BIT* A, int length);
-void convert_to_binary_char(int a, char* A, int length);
+// void convert_to_binary_char(int a, char* A, int length);
 int binary_to_integer(BIT* A);
 void reg_conv(int* num, char* reg);
 
@@ -242,15 +242,15 @@ void print_binary(BIT* A)
     printf("%d", A[i]); 
 }
 
-void convert_to_binary_char(int a, char* A, int length)
-{
-  // TODO: perform conversion of integer to binary representation as char array
-  // This uses the same logic as your HW5 implementation. However, you're 
-  // converting to a character array instead of a BIT array.
-  // This might be useful in your get_instructions() function, if you use the
-  // same approach that I use. It also might not be needed if you directly
-  // convert the instructions to the proper BIT format.
-}
+// void convert_to_binary_char(int a, char* A, int length)
+// {
+//   // TODO: perform conversion of integer to binary representation as char array
+//   // This uses the same logic as your HW5 implementation. However, you're 
+//   // converting to a character array instead of a BIT array.
+//   // This might be useful in your get_instructions() function, if you use the
+//   // same approach that I use. It also might not be needed if you directly
+//   // convert the instructions to the proper BIT format.
+// }
 
 void convert_to_binary(int a, BIT* A, int length)
 {
@@ -422,11 +422,11 @@ int get_instructions(BIT Instructions[][32])
       if(strcmp(opcode, "jr") != 0){
         convert_to_binary(reg_int1, reg1_bin, 5);
         for(int i = 20; i >= 16; i--){
-          conversion[i] = reg1_bin[i-16];
+          conversion[i] = reg3_bin[i-16];
         }
         convert_to_binary(reg_int3, reg3_bin, 5);
         for(int i = 15; i >= 11; i--){
-          conversion[i] = reg3_bin[i-11];
+          conversion[i] = reg1_bin[i-11];
         }
       }
 
@@ -550,11 +550,11 @@ void Control(BIT* OpCode,
   // Input: opcode field from the instruction
   // Output: all control lines get set 
   // Note: Can use SOP or similar approaches to determine bits
-  printf("OpCode: ");
-  for(int i = 5; i >= 0; i--){
-    printf("%d", OpCode[i]);
-  }
-  printf("\n");
+  // printf("OpCode: ");
+  // for(int i = 5; i >= 0; i--){
+  //   printf("%d", OpCode[i]);
+  // }
+  // printf("\n");
 
   BIT isRType = and_gate( and_gate3( not_gate(OpCode[0]), not_gate(OpCode[1]), not_gate(OpCode[2]) ), 
                           and_gate3( not_gate(OpCode[3]), not_gate(OpCode[4]), not_gate(OpCode[5]) )  );
@@ -566,25 +566,29 @@ void Control(BIT* OpCode,
                         and_gate3( not_gate(OpCode[3]), not_gate(OpCode[4]), not_gate(OpCode[5]) ) );
   BIT isADDI = and_gate( and_gate3( not_gate(OpCode[5]), not_gate(OpCode[4]), OpCode[3] ) , 
                         and_gate3( not_gate(OpCode[2]), not_gate(OpCode[1]), not_gate(OpCode[0]) ) );
+  BIT isJ = and_gate( and_gate3( not_gate(OpCode[0]), OpCode[1], not_gate(OpCode[2]) ),
+                      and_gate3( not_gate(OpCode[3]), not_gate(OpCode[4]), not_gate(OpCode[5]) ) );
   // SET BITS
   *RegDst = isRType;
-  printf("RegDst: %d\n", *RegDst);
+  // printf("RegDst: %d\n", *RegDst);
   *ALUSrc = or_gate3(isLW, isSW, isADDI);
-  printf("ALUSrc: %d\n", *ALUSrc);
+  // printf("ALUSrc: %d\n", *ALUSrc);
   *MemToReg = isLW;
-  printf("MemToReg: %d\n", *MemToReg);
+  // printf("MemToReg: %d\n", *MemToReg);
   *RegWrite = or_gate3( isRType, isLW, isADDI );
-  printf("RegWrite: %d\n", *RegWrite);
+  // printf("RegWrite: %d\n", *RegWrite);
   *MemRead = isLW;
-  printf("MemRead: %d\n", *MemRead);
+  // printf("MemRead: %d\n", *MemRead);
   *MemWrite = isSW;
-  printf("MemWrite: %d\n", *MemWrite);
+  // printf("MemWrite: %d\n", *MemWrite);
   *Branch = isBEQ;
-  printf("Branch: %d\n", *Branch);
+  // printf("Branch: %d\n", *Branch);
   ALUOp[1] = isRType;
-  printf("ALUOP[1]: %d\n", ALUOp[1]);
+  // printf("ALUOP[1]: %d\n", ALUOp[1]);
   ALUOp[0] = or_gate(isBEQ, isADDI);
-  printf("ALUOP[0]: %d\n", ALUOp[0]);
+  // printf("ALUOP[0]: %d\n", ALUOp[0]);
+  *Jump = isJ;
+  // printf("Jump: %d\n", *Jump);
 
 }
 
@@ -599,12 +603,14 @@ void Read_Register(BIT* ReadRegister1, BIT* ReadRegister2,
   BIT converted2[32] = {FALSE};
   decoder5(ReadRegister1, TRUE, converted1);
   decoder5(ReadRegister2, TRUE, converted2);
+  unsigned int index1 = 0;
+  unsigned int index2 = 0;
   for(int i = 0; i < 32; i++){
-    ReadData1 = converted1[i]*i;
+    index1 = converted1[i]*i;
+    index2 = converted2[i]*i;
   }
-  for(int i = 0; i < 32; i++){
-    ReadData2 = converted2[i]*i;
-  }
+  copy_bits(ReadData1, MEM_Register[index1]);
+  copy_bits(ReadData2, MEM_Register[index2]);
 }
 
 void Write_Register(BIT RegWrite, BIT* WriteRegister, BIT* WriteData)
@@ -652,7 +658,7 @@ void ALU_Control(BIT* ALUOp, BIT* funct, BIT* ALUControl)
   ALUControl[2] = or_gate( ALUOp[0], funct[1] );
   ALUControl[1] = or_gate( not_gate( funct[2] ) , or_gate( and_gate( not_gate(ALUOp[1]), not_gate(ALUOp[0]) ) , ALUOp[0] ) ) ;
   ALUControl[0] = and_gate( ALUOp[1], or_gate( and_gate(funct[3], funct[1]) , and_gate(funct[2], funct[0]) ) );
-  printf("ALU Control: %d %d %d %d\n", ALUControl[3], ALUControl[2], ALUControl[1], ALUControl[0]);
+  // printf("ALU Control: %d %d %d %d\n", ALUControl[3], ALUControl[2], ALUControl[1], ALUControl[0]);
 
 }
 
@@ -713,7 +719,7 @@ void ALU(BIT* ALUControl, BIT* Input1, BIT* Input2, BIT* Zero, BIT* Result)
       and_gate(ALUControl[0], and_gate(not_gate(ALUControl[1]), ALUControl[2])));
   BIT Op1 = or_gate(and_gate(ALUControl[0], ALUControl[1]), ALUControl[2]);
   BIT Binvert = and_gate(ALUControl[2], Branch);
-  printf("Binvert: %d\n", Binvert);
+  // printf("Binvert: %d\n", Binvert);
   BIT CarryIn = Binvert;
   BIT CarryOut = FALSE;
   BIT Y0[32] = {FALSE};
@@ -721,9 +727,7 @@ void ALU(BIT* ALUControl, BIT* Input1, BIT* Input2, BIT* Zero, BIT* Result)
   ALU32( Input1, Input2, Binvert, CarryIn, Op0, Op1, Y0, &CarryOut );
 
   // set the zero bit and return
-  BIT is_z = FALSE;
-  is_zero(Y0, 32, &is_z);
-  Zero = is_z;
+  is_zero(Y0, 32, Zero);
   copy_bits(Y0, Result);
 }
 
@@ -832,12 +836,12 @@ void updateState()
     second[i] = multiplexor2(ALUSrc, ReadData2[i], immediate32[i]);
   }
   BIT result[32] = {FALSE};
-  int a = binary_to_integer(ReadData1);
+  // int a = binary_to_integer(ReadData1);
   // printf("%d\n", a);
-  int b = binary_to_integer(second);
+  // int b = binary_to_integer(second);
   // printf("%d\n", b);
   // printf("%d\n", ALUSrc);
-  ALU(ALUControl, ReadData1, second, Zero, result);
+  ALU(ALUControl, ReadData1, second, &Zero, result);
   // printf("%d\n", binary_to_integer(result));
   // Memory - read/write data memory
   // ---------------------------------------------------------------------------
@@ -852,19 +856,19 @@ void updateState()
   }
   // print_binary(WriteData);
   Write_Register(RegWrite,WriteRegister,WriteData);
-  printf("RegWrite: %d\n", RegWrite);
-  printf("MemToReg: %d\n", MemToReg);
+  // printf("RegWrite: %d\n", RegWrite);
+  // printf("MemToReg: %d\n", MemToReg);
   
   // Update PC - determine the final PC value for the next instruction
   // ---------------------------------------------------------------------------
 
   // update pc for next instruction
-  printf("%d\n", binary_to_integer(PC));
+  // printf("PC: %d\n", binary_to_integer(PC));
   BIT nextPc[32] = {FALSE};
   BIT CarryOut = FALSE;
-  ALU32( PC, ONE, FALSE, FALSE, TRUE, FALSE, nextPc, &CarryOut);
-  printf("%d\n", binary_to_integer(nextPc));
-
+  ALU32( PC, ONE, FALSE, FALSE, FALSE, TRUE, nextPc, &CarryOut);
+  // printf("NEXT PC: %d\n", binary_to_integer(nextPc));
+  
   BIT jumpAddress[32] = {FALSE};
   for(int i = 25; i >= 0; i--){
     jumpAddress[i] = Instruction[i];
@@ -872,17 +876,18 @@ void updateState()
   BIT branchPC[32] = {FALSE};
 
   CarryOut = FALSE;
-  ALU32(nextPc,immediate32,FALSE,FALSE,TRUE,FALSE,branchPC,&CarryOut);
-
+  ALU32(nextPc,immediate32,FALSE,FALSE,FALSE,TRUE,branchPC,&CarryOut);
+  // printf("Branch PC: %d\n", binary_to_integer(branchPC));
+  // printf("Zero flag: %d\n", Zero);
   BIT bqe = and_gate(Branch, Zero);
+  BIT nextPc2[32] = {FALSE};
   for(int i = 31; i >= 0; i--){
-    PC[i] = multiplexor2(bqe, nextPc, branchPC);
+    nextPc2[i] = multiplexor2(bqe, nextPc[i], branchPC[i]);
   }
-
   for(int i = 31; i >= 0; i--){
-    PC[i] = multiplexor2(Jump, jumpAddress, branchPC);
+    PC[i] = multiplexor2(Jump, nextPc2[i], jumpAddress[i]);
   }
-
+  // printf("%d\n", binary_to_integer(PC));
 }
 
 
